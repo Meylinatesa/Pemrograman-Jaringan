@@ -3,8 +3,9 @@ import json
 import base64
 import logging
 import os
+import sys
 
-server_address=('0.0.0.0',6666)
+server_address=('172.16.16.101',6666)
 
 def send_command(command_str=""):
     global server_address
@@ -65,37 +66,53 @@ def remote_get(filename=""):
         return False
 
 def remote_upload(filename=""):
+    if not filename:
+        print("Error: filename tidak boleh kosong")
+        return False
+
     if not os.path.exists(filename):
         print(f"File '{filename}' tidak ditemukan.")
         return False
-    with open(filename, 'rb') as fp:
-        encoded = base64.b64encode(fp.read()).decode()
-    command_str = f"UPLOAD {filename} {encoded}"
-    hasil = send_command(command_str)
-    if hasil and hasil['status'] == 'OK':
-        print(f"File '{filename}' berhasil diupload.")
-        return True
-    else:
-        print(f"Gagal upload file '{filename}'")
+
+    try:
+        with open(filename, 'rb') as fp:
+            encoded = base64.b64encode(fp.read()).decode()
+
+        command_str = f"UPLOAD {filename} {encoded}"
+        hasil = send_command(command_str)
+
+        if hasil and hasil.get('status') == 'OK':
+            print(f"File '{filename}' berhasil diupload.")
+            return True
+        else:
+            print(f"Gagal upload file '{filename}': {hasil.get('data', 'Unknown error')}")
+            return False
+
+    except Exception as e:
+        print(f"Error upload file: {e}")
         return False
 
 def remote_delete(filename=""):
+    if not filename:
+        print("Error: filename tidak boleh kosong")
+        return False
+
     command_str = f"DELETE {filename}"
     hasil = send_command(command_str)
-    if hasil and hasil['status'] == 'OK':
+
+    if hasil and hasil.get('status') == 'OK':
         print(f"File '{filename}' berhasil dihapus.")
         return True
     else:
-        print(f"Gagal menghapus file '{filename}'")
+        print(f"Gagal menghapus file '{filename}': {hasil.get('data', 'Unknown error')}")
         return False
 
-
 if __name__=='__main__':
-    server_address=('127.0.0.1',6666)
-    remote_list()
-    remote_upload("contoh.txt")
-    remote_list()
-    remote_delete("contoh.txt")
+    server_address=('172.16.16.101',6666)
     remote_list()
     remote_get('donalbebek.jpg')
-
+    remote_list()
+    remote_upload('contoh.txt')
+    remote_list()
+    remote_delete('contoh.txt')
+    remote_list()
